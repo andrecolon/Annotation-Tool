@@ -1,0 +1,562 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Vanilla JS Annotation Tool + Comments</title>
+<style>
+  :root {
+    --bg: #0b0c0f;
+    --ink: #e8e8e8;
+    --muted: #a0a6b0;
+    --accent: #ffe066;
+    --panel: #141721;
+  }
+  body {
+    margin: 0;
+    font:
+      16px/1.5 system-ui,
+      -apple-system,
+      Segoe UI,
+      Roboto,
+      sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .wrap {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    min-height: 100vh;
+  }
+  aside {
+    background: var(--panel);
+    padding: 16px;
+    border-right: 1px solid #262a33;
+  }
+  main {
+    padding: 24px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  h2 {
+    font-size: 18px;
+    margin: 16px 0 8px;
+    color: var(--muted);
+  }
+  button,
+  input[type="file"]::file-selector-button {
+    padding: 8px 10px;
+    border: 1px solid #303748;
+    background: #1a1f2b;
+    color: var(--ink);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  button:hover {
+    filter: brightness(1.1);
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 8px 0 12px;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  #doc {
+    background: #0e1118;
+    border: 1px solid #262a33;
+    border-radius: 12px;
+    padding: 18px;
+  }
+  #doc p {
+    margin: 0 0 12px;
+  }
+  mark[data-ann-id] {
+    background: var(--accent);
+    color: #000;
+    padding: 0 0.12em;
+    border-radius: 0.2em;
+  }
+  ol {
+    list-style: decimal;
+    padding-left: 20px;
+    margin: 8px 0 0;
+    max-height: 40vh;
+    overflow: auto;
+  }
+  li {
+    margin: 4px 0 10px;
+  }
+  .meta {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .links {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    align-items: center;
+  }
+  .links a {
+    font-size: 12px;
+    color: #93c5fd;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .links a:hover {
+    text-decoration: underline;
+  }
+  .comment {
+    font-size: 12px;
+    color: #d1d5db;
+    background: #0b0d13;
+    border: 1px solid #262a33;
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-top: 6px;
+    white-space: pre-wrap;
+  }
+  .kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: #0b0d13;
+    border: 1px solid #262a33;
+    border-radius: 6px;
+    padding: 2px 6px;
+  }
+</style>
+
+<div class="wrap">
+  <aside>
+    <h1>Annotations</h1>
+    <div class="row">
+      <button id="btnHi">Highlight</button>
+      <button id="btnClrSel" title="Clear current selection">
+        Clear selection
+      </button>
+    </div>
+    <div class="row">
+      <button id="btnExport">Export JSON</button>
+      <label>
+        <input
+          id="fileImport"
+          type="file"
+          accept="application/json"
+          style="display: none"
+        />
+        <span class="kbd" id="btnImport" role="button" tabindex="0"
+          >Import JSON…</span
+        >
+      </label>
+      <button id="btnClearAll">Clear all</button>
+    </div>
+    <div class="hint">
+      Select text, then click <b>Highlight</b>. Double-click selects a word.
+      Triple-click selects a paragraph.
+    </div>
+    <h2>Saved</h2>
+    <ol id="annoList"></ol>
+  </aside>
+
+  <main>
+    <h1 id="title">Sample Article</h1>
+    <div id="doc" contenteditable="false" spellcheck="false">
+      <p>
+        “Behold, I come; In the scroll of the book it is written of me., I
+        delight to do Your will, O my God; Your Law is within my heart.”, I have
+        proclaimed glad tidings of righteousness in the great congregation;
+        Behold, I will not restrain my lips, O LORD, You know., I have not
+        hidden Your righteousness within my heart; I have spoken of Your
+        faithfulness and Your salvation; I have not concealed Your
+        lovingkindness and Your truth from the great congregation., You, O LORD,
+        will not withhold Your compassion from me; Your lovingkindness and Your
+        truth will continually preserve me., For evils beyond number have
+        surrounded me; My iniquities have overtaken me, so that I am not able to
+        see; They are more numerous than the hairs of my head, And my heart has
+        failed me., Be pleased, O LORD, to deliver me; Make haste, O LORD, to
+        help me., Let those be ashamed and humiliated together Who seek my life
+        to destroy it; Let those be turned back and dishonored Who delight in my
+        hurt., Let those be appalled because of their shame Who say to me, “Aha,
+        aha!”, Let all who seek You rejoice and be glad in You; Let those who
+        love Your salvation say continually, “The LORD be magnified!”, Since I
+        am afflicted and needy, Let the Lord be mindful of me. You are my help
+        and my deliverer; Do not delay, O my God., For the choir director. A
+        Psalm of David. How blessed is he who considers the helpless; The LORD
+        will deliver him in a day of trouble., The LORD will protect him and
+        keep him alive, And he shall be called blessed upon the earth; And do
+        not give him over to the desire of his enemies., The LORD will sustain
+        him upon his sickbed; In his illness, You restore him to health., As for
+        me, I said, “O LORD, be gracious to me; Heal my soul, for I have sinned
+        against You.”, My enemies speak evil against me, “When will he die, and
+        his name perish?”, And when he comes to see [me], he speaks falsehood;
+        His heart gathers wickedness to itself; When he goes outside, he tells
+        it., All who hate me whisper together against me; Against me they devise
+        my hurt, [saying],, “A wicked thing is poured out upon him, That when he
+        lies down, he will not rise up again.”, Even my close friend in whom I
+        trusted, Who ate my bread, Has lifted up his heel against me., But You,
+        O LORD, be gracious to me and raise me up, That I may repay them.
+      </p>
+
+      <p>
+        By this I know that You are pleased with me, Because my enemy does not
+        shout in triumph over me., As for me, You uphold me in my integrity, And
+        You set me in Your presence forever., Blessed be the LORD, the God of
+        Israel, From everlasting to everlasting. Amen and Amen., For the choir
+        director. A Maskil of the sons of Korah. As the deer pants for the water
+        brooks, So my soul pants for You, O God., My soul thirsts for God, for
+        the living God; When shall I come and appear before God?, My tears have
+        been my food day and night, While [they] say to me all day long, “Where
+        is your God?”, These things I remember and I pour out my soul within me.
+        For I used to go along with the throng [and] lead them in procession to
+        the house of God, With the voice of joy and thanksgiving, a multitude
+        keeping festival., Why are you in despair, O my soul? And [why] have you
+        become disturbed within me? Hope in God, for I shall again praise Him
+        [For] the help of His presence., O my God, my soul is in despair within
+        me; Therefore I remember You from the land of the Jordan And the peaks
+        of Hermon, from Mount Mizar., Deep calls to deep at the sound of Your
+        waterfalls; All Your breakers and Your waves have rolled over me., The
+        LORD will command His lovingkindness in the daytime; And His song will
+        be with me in the night, A prayer to the God of my life., I will say to
+        God my rock, “Why have You forgotten me? Why do I go mourning because of
+        the oppression of the enemy?”, As a shattering of my bones, my
+        adversaries revile me, While they say to me all day long, “Where is your
+        God?”, Why are you in despair, O my soul? And why have you become
+        disturbed within me? Hope in God, for I shall yet praise Him, The help
+        of my countenance and my God., Vindicate me, O God, and plead my case
+        against an ungodly nation; O deliver me from the deceitful and unjust
+        man!, For You are the God of my strength; why have You rejected me? Why
+        do I go mourning because of the oppression of the enemy?, O send out
+        Your light and Your truth, let them lead me; Let them bring me to Your
+        holy hill And to Your dwelling places.
+      </p>
+    </div>
+  </main>
+</div>
+
+<script>
+  (() => {
+    const LS_KEY = "anno:v1";
+    const LS_COMMENTS = "anno:v1:comments"; // separate storage for comments
+
+    const docEl = document.getElementById("doc");
+    const listEl = document.getElementById("annoList");
+    const btnHi = document.getElementById("btnHi");
+    const btnClrSel = document.getElementById("btnClrSel");
+    const btnExport = document.getElementById("btnExport");
+    const btnImport = document.getElementById("btnImport");
+    const fileImport = document.getElementById("fileImport");
+    const btnClearAll = document.getElementById("btnClearAll");
+
+    const state = {
+      annos: load(LS_KEY, []),
+      comments: load(LS_COMMENTS, {}), // { [id]: "text" }
+      nextId: 1,
+    };
+
+    if (state.annos.length) {
+      state.nextId = Math.max(...state.annos.map((a) => a.id)) + 1;
+    }
+
+    function save(key, val) {
+      localStorage.setItem(key, JSON.stringify(val));
+    }
+    function load(key, fallback) {
+      try {
+        const v = localStorage.getItem(key);
+        return v ? JSON.parse(v) : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function walkTextNodes(root) {
+      return document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode: (n) =>
+          n.nodeValue.trim().length
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.REJECT,
+      });
+    }
+
+    function rangeToOffsets(range, root) {
+      const tw = walkTextNodes(root);
+      let pos = 0,
+        start = -1,
+        end = -1;
+      while (tw.nextNode()) {
+        const node = tw.currentNode;
+        if (node === range.startContainer) start = pos + range.startOffset;
+        if (node === range.endContainer) end = pos + range.endOffset;
+        pos += node.nodeValue.length;
+      }
+      return start >= 0 && end > start ? [start, end] : null;
+    }
+
+    function offsetsToRange(start, end, root) {
+      const tw = walkTextNodes(root);
+      let pos = 0,
+        sN = null,
+        sO = 0,
+        eN = null,
+        eO = 0;
+      while (tw.nextNode()) {
+        const node = tw.currentNode,
+          nextPos = pos + node.nodeValue.length;
+        if (!sN && start >= pos && start <= nextPos) {
+          sN = node;
+          sO = start - pos;
+        }
+        if (!eN && end >= pos && end <= nextPos) {
+          eN = node;
+          eO = end - pos;
+        }
+        pos = nextPos;
+        if (sN && eN) break;
+      }
+      if (!sN || !eN) return null;
+      const r = document.createRange();
+      r.setStart(sN, sO);
+      r.setEnd(eN, eO);
+      return r;
+    }
+
+    function wrapRange(range, id) {
+      const mark = document.createElement("mark");
+      mark.setAttribute("data-ann-id", String(id));
+      range.surroundContents(mark);
+      return mark;
+    }
+
+    function getSelectionRangeWithin(root) {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return null;
+      const r = sel.getRangeAt(0);
+      if (!root.contains(r.commonAncestorContainer) || r.collapsed) return null;
+      return r;
+    }
+
+    function addFromSelection() {
+      const r = getSelectionRangeWithin(docEl);
+      if (!r) {
+        alert("Select text inside the article first.");
+        return;
+      }
+      const off = rangeToOffsets(r, docEl);
+      if (!off) {
+        alert("Unable to capture selection.");
+        return;
+      }
+      const [start, end] = off;
+      const quote = r.cloneContents().textContent;
+      if (!quote || !quote.trim()) {
+        alert("Selection is empty.");
+        return;
+      }
+
+      const id = state.nextId++;
+      const rec = { id, start, end, quote, ts: Date.now() };
+      state.annos.push(rec);
+      save(LS_KEY, state.annos);
+
+      const liveRange = offsetsToRange(start, end, docEl);
+      if (liveRange) wrapRange(liveRange, id);
+
+      renderList();
+      window.getSelection().removeAllRanges();
+    }
+
+    function restoreAll() {
+      const sorted = [...state.annos].sort((a, b) => b.start - a.start);
+      for (const a of sorted) {
+        if (docEl.querySelector(`mark[data-ann-id="${a.id}"]`)) continue;
+        let r = offsetsToRange(a.start, a.end, docEl);
+        if (!r && a.quote) {
+          const idx = docEl.textContent.indexOf(a.quote);
+          if (idx >= 0) r = offsetsToRange(idx, idx + a.quote.length, docEl);
+        }
+        if (r) {
+          try {
+            wrapRange(r, a.id);
+          } catch {}
+        }
+      }
+    }
+
+    function renderList() {
+      listEl.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      state.annos
+        .slice()
+        .sort((a, b) => a.start - b.start)
+        .forEach((a) => {
+          const li = document.createElement("li");
+
+          const txt = document.createElement("div");
+          const snip =
+            a.quote.length > 120 ? a.quote.slice(0, 117) + "…" : a.quote;
+          txt.textContent = snip;
+
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          const d = new Date(a.ts);
+          meta.textContent = `#${a.id} • ${d.toLocaleString()} • [${a.start}-${a.end}]`;
+
+          const links = document.createElement("div");
+          links.className = "links";
+
+          const jump = document.createElement("a");
+          jump.textContent = "jump";
+          jump.addEventListener("click", () => jumpTo(a.id));
+
+          const comment = document.createElement("a");
+          comment.textContent = "comment";
+          comment.addEventListener("click", () => editComment(a.id));
+
+          const del = document.createElement("a");
+          del.textContent = "delete";
+          del.addEventListener("click", () => removeAnno(a.id));
+
+          links.append(jump, comment, del);
+          li.append(txt, meta, links);
+
+          // Render comment block if exists
+          const cText = state.comments[a.id];
+          if (cText && cText.trim()) {
+            const c = document.createElement("div");
+            c.className = "comment";
+            c.textContent = cText;
+            li.append(c);
+          }
+
+          frag.append(li);
+        });
+      listEl.append(frag);
+    }
+
+    function jumpTo(id) {
+      const mark = docEl.querySelector(`mark[data-ann-id="${id}"]`);
+      if (!mark) return;
+      mark.scrollIntoView({ behavior: "smooth", block: "center" });
+      mark.style.outline = "2px solid #3b82f6";
+      setTimeout(() => {
+        mark.style.outline = "";
+      }, 800);
+    }
+
+    function unwrap(node) {
+      const parent = node.parentNode;
+      while (node.firstChild) parent.insertBefore(node.firstChild, node);
+      parent.removeChild(node);
+    }
+
+    function removeAnno(id) {
+      // Remove DOM mark
+      const mark = docEl.querySelector(`mark[data-ann-id="${id}"]`);
+      if (mark) unwrap(mark);
+      // Remove from state
+      state.annos = state.annos.filter((a) => a.id !== id);
+      save(LS_KEY, state.annos);
+      // Remove comment in separate storage
+      if (state.comments[id] !== undefined) {
+        delete state.comments[id];
+        save(LS_COMMENTS, state.comments);
+      }
+      renderList();
+    }
+
+    function editComment(id) {
+      const existing = state.comments[id] || "";
+      const input = prompt("Add or edit comment:", existing);
+      if (input === null) return; // cancelled
+      const trimmed = input.trim();
+      if (trimmed) {
+        state.comments[id] = trimmed;
+      } else {
+        delete state.comments[id];
+      }
+      save(LS_COMMENTS, state.comments);
+      renderList();
+    }
+
+    function clearSelection() {
+      const sel = window.getSelection();
+      if (sel) sel.removeAllRanges();
+    }
+
+    function exportJSON() {
+      const payload = { annos: state.annos, comments: state.comments };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "annotations_with_comments.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importJSON(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          // Backward compatible: accept either array or {annos, comments}
+          const incomingAnnos = Array.isArray(data) ? data : data.annos || [];
+          const incomingComments = Array.isArray(data)
+            ? {}
+            : data.comments || {};
+          // Merge annos
+          for (const rec of incomingAnnos) {
+            if (state.annos.some((a) => a.id === rec.id)) {
+              rec.id = state.nextId++;
+            } else {
+              state.nextId = Math.max(state.nextId, rec.id + 1);
+            }
+            state.annos.push(rec);
+          }
+          // Merge comments by id; if id remapped above, comments won’t follow.
+          // Simple strategy: if comment id collides and that id exists, keep existing.
+          for (const k of Object.keys(incomingComments)) {
+            if (state.comments[k] === undefined)
+              state.comments[k] = incomingComments[k];
+          }
+          save(LS_KEY, state.annos);
+          save(LS_COMMENTS, state.comments);
+          restoreAll();
+          renderList();
+        } catch {
+          alert("Import failed. Not valid JSON.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Events
+    btnHi.addEventListener("click", addFromSelection);
+    btnClrSel.addEventListener("click", clearSelection);
+    btnExport.addEventListener("click", exportJSON);
+    btnImport.addEventListener("click", () => fileImport.click());
+    fileImport.addEventListener("change", (e) => {
+      const f = e.target.files?.[0];
+      if (f) importJSON(f);
+      fileImport.value = "";
+    });
+    btnClearAll.addEventListener("click", () => {
+      if (!confirm("Delete all highlights and comments?")) return;
+      docEl.querySelectorAll("mark[data-ann-id]").forEach(unwrap);
+      state.annos = [];
+      state.comments = {};
+      save(LS_KEY, state.annos);
+      save(LS_COMMENTS, state.comments);
+      renderList();
+    });
+
+    // Init
+    restoreAll();
+    renderList();
+  })();
+</script>
